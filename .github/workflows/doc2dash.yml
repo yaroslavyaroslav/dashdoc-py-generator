@@ -55,3 +55,9 @@ jobs:
     - name: Run doc2dash
       run: |
         doc2dash -n PackageDocs -d docset ${{ env.DOCS_PATH }}
+
+    - name: Upload docset as artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: PackageDocs
+        path: package_repo/docset
