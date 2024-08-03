@@ -10,7 +10,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
 
     steps:
     - name: Checkout repository
@@ -26,12 +26,6 @@ jobs:
         python -m pip install --upgrade pip
         pip install doc2dash
 
-
-    - name: Clone package repository
-      run: |
-        git clone ${{ env.URL }} package_repo
-        cd package_repo
-
     - name: Extract information from commit or PR
       id: extract_info
       run: |
@@ -39,52 +33,42 @@ jobs:
         PR_BODY="${{ github.event.pull_request.body }}"
 
         # Extract URL, docs path, and build command from commit message or PR body
-        URL=$(echo "$COMMIT_MESSAGE" | grep -oP '(?<=URL: ).*' || echo "$PR_BODY" | grep -oP '(?<=URL: ).*')
-        DOCS_PATH=$(echo "$COMMIT_MESSAGE" | grep -oP '(?<=DOCS_PATH: ).*' || echo "$PR_BODY" | grep -oP '(?<=DOCS_PATH: ).*')
-        BUILD_COMMAND=$(echo "$COMMIT_MESSAGE" | grep -oP '(?<=BUILD_COMMAND: ).*' || echo "$PR_BODY" | grep -oP '(?<=BUILD_COMMAND: ).*')
-
-        # Modify BUILD_COMMAND to run in the correct directory
-        BUILD_COMMAND="$BUILD_COMMAND"
+        URL=$(echo "$COMMIT_MESSAGE" | grep -Eo 'URL: .*' | cut -d' ' -f2- || echo "$PR_BODY" | grep -Eo 'URL: .*' | cut -d' ' -f2-)
+        DOCS_PATH=$(echo "$COMMIT_MESSAGE" | grep -Eo 'DOCS_PATH: .*' | cut -d' ' -f2- || echo "$PR_BODY" | grep -Eo 'DOCS_PATH: .*' | cut -d' ' -f2-)
+        BUILD_COMMAND=$(echo "$COMMIT_MESSAGE" | grep -Eo 'BUILD_COMMAND: .*' | cut -d' ' -f2- || echo "$PR_BODY" | grep -Eo 'BUILD_COMMAND: .*' | cut -d' ' -f2-)
+        PACKAGE_NAME=$(echo "$COMMIT_MESSAGE" | grep -Eo 'PACKAGE_NAME: .*' | cut -d' ' -f2- || echo "$PR_BODY" | grep -Eo 'PACKAGE_NAME: .*' | cut -d' ' -f2-)
 
         echo "URL=$URL" >> $GITHUB_ENV
         echo "DOCS_PATH=$DOCS_PATH" >> $GITHUB_ENV
         echo "BUILD_COMMAND=$BUILD_COMMAND" >> $GITHUB_ENV
+        echo "PACKAGE_NAME=$PACKAGE_NAME" >> $GITHUB_ENV
 
+    - name: Clone package repository
+      run: |
+        git clone ${{ env.URL }} package_repo
 
     - name: Build documentation
       run: |
+        cd package_repo
         if [ -n "${{ env.BUILD_COMMAND }}" ]; then
-          eval ${{ env.BUILD_COMMAND }}
+          eval ${{ env.BUILD_COMMAND }}  # Execute the build command
         fi
 
     - name: Check if docs directory exists
       run: |
+        cd package_repo
         if [ ! -d "${{ env.DOCS_PATH }}" ]; then
           echo "Documentation path does not exist: ${{ env.DOCS_PATH }}"
           exit 1
         fi
 
-
-
     - name: Run doc2dash
       run: |
-        doc2dash -n PackageDocs -d docset ${{ env.DOCS_PATH }}
-
-
+        cd package_repo
+        doc2dash -n "${{ env.PACKAGE_NAME }}" -d docset ${{ env.DOCS_PATH }}
 
     - name: Upload docset as artifact
       uses: actions/upload-artifact@v2
       with:
-        name: PackageDocs
+        name: ${{ env.PACKAGE_NAME }}
         path: package_repo/docset
-
-
-
-
-
-
-
-
-
-
-
