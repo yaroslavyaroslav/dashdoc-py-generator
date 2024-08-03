@@ -29,14 +29,25 @@ jobs:
     - name: Extract information from commit or PR
       id: extract_info
       run: |
-        COMMIT_MESSAGE="${{ github.event.head_commit.message }}"
-        PR_BODY="${{ github.event.pull_request.body }}"
+        if [ "${{ github.event_name }}" == "pull_request" ]; then
+          # For pull requests, extract from the PR body
+          COMMIT_MESSAGE=""
+          PR_BODY="${{ github.event.pull_request.body }}"
 
-        # Extract URL, docs path, and build command from commit message or PR body
-        URL=$(echo "$COMMIT_MESSAGE" | grep -Eo 'URL: .*' | cut -d' ' -f2- || echo "$PR_BODY" | grep -Eo 'URL: .*' | cut -d' ' -f2-)
-        DOCS_PATH=$(echo "$COMMIT_MESSAGE" | grep -Eo 'DOCS_PATH: .*' | cut -d' ' -f2- || echo "$PR_BODY" | grep -Eo 'DOCS_PATH: .*' | cut -d' ' -f2-)
-        BUILD_COMMAND=$(echo "$COMMIT_MESSAGE" | grep -Eo 'BUILD_COMMAND: .*' | cut -d' ' -f2- || echo "$PR_BODY" | grep -Eo 'BUILD_COMMAND: .*' | cut -d' ' -f2-)
-        PACKAGE_NAME=$(echo "$COMMIT_MESSAGE" | grep -Eo 'PACKAGE_NAME: .*' | cut -d' ' -f2- || echo "$PR_BODY" | grep -Eo 'PACKAGE_NAME: .*' | cut -d' ' -f2-)
+          URL=$(echo "$PR_BODY" | grep -Eo 'URL: .*' | cut -d' ' -f2-)
+          DOCS_PATH=$(echo "$PR_BODY" | grep -Eo 'DOCS_PATH: .*' | cut -d' ' -f2-)
+          BUILD_COMMAND=$(echo "$PR_BODY" | grep -Eo 'BUILD_COMMAND: .*' | cut -d' ' -f2-)
+          PACKAGE_NAME=$(echo "$PR_BODY" | grep -Eo 'PACKAGE_NAME: .*' | cut -d' ' -f2-)
+        else
+          # For pushes, extract from the commit message
+          COMMIT_MESSAGE="${{ github.event.head_commit.message }}"
+          PR_BODY=""
+
+          URL=$(echo "$COMMIT_MESSAGE" | grep -Eo 'URL: .*' | cut -d' ' -f2-)
+          DOCS_PATH=$(echo "$COMMIT_MESSAGE" | grep -Eo 'DOCS_PATH: .*' | cut -d' ' -f2-)
+          BUILD_COMMAND=$(echo "$COMMIT_MESSAGE" | grep -Eo 'BUILD_COMMAND: .*' | cut -d' ' -f2-)
+          PACKAGE_NAME=$(echo "$COMMIT_MESSAGE" | grep -Eo 'PACKAGE_NAME: .*' | cut -d' ' -f2-)
+        fi
 
         echo "URL=$URL" >> $GITHUB_ENV
         echo "DOCS_PATH=$DOCS_PATH" >> $GITHUB_ENV
