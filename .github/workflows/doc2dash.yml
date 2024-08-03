@@ -26,30 +26,30 @@ jobs:
         python -m pip install --upgrade pip
         pip install doc2dash
 
-    - name: Extract information from commit or PR
-      id: extract_info
-      run: |
-        COMMIT_MESSAGE="${{ github.event.head_commit.message }}"
-        PR_BODY="${{ github.event.pull_request.body }}"
-        
-        # Extract URL, docs path, and build command from commit message or PR body
-        URL=$(echo "$COMMIT_MESSAGE" | grep -oP '(?<=URL: ).*' || echo "$PR_BODY" | grep -oP '(?<=URL: ).*')
-        DOCS_PATH=$(echo "$COMMIT_MESSAGE" | grep -oP '(?<=DOCS_PATH: ).*' || echo "$PR_BODY" | grep -oP '(?<=DOCS_PATH: ).*')
-        BUILD_COMMAND=$(echo "$COMMIT_MESSAGE" | grep -oP '(?<=BUILD_COMMAND: ).*' || echo "$PR_BODY" | grep -oP '(?<=BUILD_COMMAND: ).*')
-        
-        # Modify BUILD_COMMAND to run in the correct directory
-        BUILD_COMMAND="cd package_repo && $BUILD_COMMAND"
-        
-        echo "URL=$URL" >> $GITHUB_ENV
-        echo "DOCS_PATH=$DOCS_PATH" >> $GITHUB_ENV
-        echo "BUILD_COMMAND=$BUILD_COMMAND" >> $GITHUB_ENV
-
-
 
     - name: Clone package repository
       run: |
         git clone ${{ env.URL }} package_repo
         cd package_repo
+
+    - name: Extract information from commit or PR
+      id: extract_info
+      run: |
+        COMMIT_MESSAGE="${{ github.event.head_commit.message }}"
+        PR_BODY="${{ github.event.pull_request.body }}"
+
+        # Extract URL, docs path, and build command from commit message or PR body
+        URL=$(echo "$COMMIT_MESSAGE" | grep -oP '(?<=URL: ).*' || echo "$PR_BODY" | grep -oP '(?<=URL: ).*')
+        DOCS_PATH=$(echo "$COMMIT_MESSAGE" | grep -oP '(?<=DOCS_PATH: ).*' || echo "$PR_BODY" | grep -oP '(?<=DOCS_PATH: ).*')
+        BUILD_COMMAND=$(echo "$COMMIT_MESSAGE" | grep -oP '(?<=BUILD_COMMAND: ).*' || echo "$PR_BODY" | grep -oP '(?<=BUILD_COMMAND: ).*')
+
+        # Modify BUILD_COMMAND to run in the correct directory
+        BUILD_COMMAND="$BUILD_COMMAND"
+
+        echo "URL=$URL" >> $GITHUB_ENV
+        echo "DOCS_PATH=$DOCS_PATH" >> $GITHUB_ENV
+        echo "BUILD_COMMAND=$BUILD_COMMAND" >> $GITHUB_ENV
+
 
     - name: Build documentation
       run: |
