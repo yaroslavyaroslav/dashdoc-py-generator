@@ -41,75 +41,7 @@ jobs:
         echo "DOCS_PATH=$DOCS_PATH" >> $GITHUB_ENV
         echo "BUILD_COMMAND=$BUILD_COMMAND" >> $GITHUB_ENV
 
-    - name: Clone package repository
-      run: |
-        git clone ${{ env.URL }} package_repo
-        cd package_repo
 
-    - name: Build documentation
-      run: |
-        if [ -n "${{ env.BUILD_COMMAND }}" ]; then
-          eval ${{ env.BUILD_COMMAND }}
-        fi
-
-    - name: Check if docs directory exists
-      run: |
-        if [ ! -d "${{ env.DOCS_PATH }}" ]; then
-          echo "Documentation path does not exist: ${{ env.DOCS_PATH }}"
-          exit 1
-        fi
-
-    - name: Run doc2dash
-      run: |
-        doc2dash -n PackageDocs -d docset ${{ env.DOCS_PATH }}
-
-    - name: Upload docset as artifact
-      uses: actions/upload-artifact@v2
-      with:
-        name: PackageDocs
-        path: package_repo/docset
-name: Doc2Dash
-
-on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
-
-jobs:
-  build:
-    runs-on: ubuntu-latest
-
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
-
-    - name: Set up Python
-      uses: actions/setup-python@v2
-      with:
-        python-version: '3.x'
-
-    - name: Install doc2dash
-      run: |
-        python -m pip install --upgrade pip
-        pip install doc2dash
-
-    - name: Extract information from commit or PR
-      id: extract_info
-      run: |
-        COMMIT_MESSAGE="${{ github.event.head_commit.message }}"
-        PR_BODY="${{ github.event.pull_request.body }}"
-        
-        # Extract URL, docs path, and build command from commit message or PR body
-        URL=$(echo "$COMMIT_MESSAGE" | grep -oP '(?<=URL: ).*' || echo "$PR_BODY" | grep -oP '(?<=URL: ).*')
-        DOCS_PATH=$(echo "$COMMIT_MESSAGE" | grep -oP '(?<=DOCS_PATH: ).*' || echo "$PR_BODY" | grep -oP '(?<=DOCS_PATH: ).*')
-        BUILD_COMMAND=$(echo "$COMMIT_MESSAGE" | grep -oP '(?<=BUILD_COMMAND: ).*' || echo "$PR_BODY" | grep -oP '(?<=BUILD_COMMAND: ).*')
-        
-        echo "URL=$URL" >> $GITHUB_ENV
-        echo "DOCS_PATH=$DOCS_PATH" >> $GITHUB_ENV
-        echo "BUILD_COMMAND=$BUILD_COMMAND" >> $GITHUB_ENV
 
     - name: Clone package repository
       run: |
@@ -129,16 +61,12 @@ jobs:
           exit 1
         fi
 
-    - name: Check if docs directory exists
-      run: |
-        if [ ! -d "${{ env.DOCS_PATH }}" ]; then
-          echo "Documentation path does not exist: ${{ env.DOCS_PATH }}"
-          exit 1
-        fi
+
 
     - name: Run doc2dash
       run: |
         doc2dash -n PackageDocs -d docset ${{ env.DOCS_PATH }}
+
 
 
     - name: Upload docset as artifact
@@ -146,5 +74,13 @@ jobs:
       with:
         name: PackageDocs
         path: package_repo/docset
+
+
+
+
+
+
+
+
 
 
